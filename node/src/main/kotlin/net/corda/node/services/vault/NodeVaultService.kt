@@ -11,7 +11,6 @@ import io.requery.kotlin.notNull
 import io.requery.query.RowExpression
 import net.corda.contracts.asset.Cash
 import net.corda.contracts.asset.OnLedgerAsset
-import net.corda.contracts.clause.AbstractConserveAmount
 import net.corda.core.ThreadBox
 import net.corda.core.bufferUntilSubscribed
 import net.corda.core.contracts.*
