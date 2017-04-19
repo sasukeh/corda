@@ -3,6 +3,8 @@ package net.corda.irs.plugin
 import net.corda.core.contracts.StateRef
 import net.corda.core.crypto.Party
 import net.corda.core.node.CordaPluginRegistry
+import net.corda.core.transactions.SignedTransaction
+import net.corda.flows.CollectSignaturesFlow
 import net.corda.irs.api.InterestRateSwapAPI
 import net.corda.irs.contract.InterestRateSwap
 import net.corda.irs.flows.AutoOfferFlow
@@ -22,5 +24,6 @@ class IRSPlugin : CordaPluginRegistry() {
             AutoOfferFlow.Requester::class.java.name to setOf(InterestRateSwap.State::class.java.name),
             UpdateBusinessDayFlow.Broadcast::class.java.name to setOf(LocalDate::class.java.name),
             FixingFlow.FixingRoleDecider::class.java.name to setOf(StateRef::class.java.name, Duration::class.java.name),
-            FixingFlow.Floater::class.java.name to setOf(Party::class.java.name, FixingFlow.FixingSession::class.java.name))
+            FixingFlow.Floater::class.java.name to setOf(Party::class.java.name, FixingFlow.FixingSession::class.java.name),
+            CollectSignaturesFlow::class.java.name to setOf(SignedTransaction::class.java.name))
 }
