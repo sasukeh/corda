@@ -19,7 +19,7 @@ class IRSPlugin : CordaPluginRegistry() {
     override val staticServeDirs: Map<String, String> = mapOf(
             "irsdemo" to javaClass.classLoader.getResource("irsweb").toExternalForm()
     )
-    override val servicePlugins = listOf(Function(FixingFlow::Service))
+    override val servicePlugins = listOf(Function(FixingFlow::Service), Function(CollectSignatureFlowImpl::Service))
     override val requiredFlows: Map<String, Set<String>> = mapOf(
             AutoOfferFlow.Requester::class.java.name to setOf(InterestRateSwap.State::class.java.name),
             UpdateBusinessDayFlow.Broadcast::class.java.name to setOf(LocalDate::class.java.name),
