@@ -14,6 +14,9 @@ import net.corda.core.contracts.StateRef
 import net.corda.core.crypto.Party
 import net.corda.core.node.CordaPluginRegistry
 import net.corda.core.serialization.SerializationCustomization
+import net.corda.core.transactions.SignedTransaction
+import net.corda.flows.CollectSignaturesFlow
+import net.corda.irs.flows.CollectSignatureFlowImpl
 import net.corda.vega.analytics.CordaMarketData
 import net.corda.vega.analytics.InitialMarginTriple
 import net.corda.vega.api.PortfolioApi
@@ -35,9 +38,10 @@ object SimmService {
         override val requiredFlows: Map<String, Set<String>> = mapOf(
                 SimmFlow.Requester::class.java.name to setOf(Party::class.java.name, LocalDate::class.java.name),
                 SimmRevaluation.Initiator::class.java.name to setOf(StateRef::class.java.name, LocalDate::class.java.name),
-                IRSTradeFlow.Requester::class.java.name to setOf(SwapData::class.java.name, Party::class.java.name))
+                IRSTradeFlow.Requester::class.java.name to setOf(SwapData::class.java.name, Party::class.java.name),
+                CollectSignaturesFlow::class.java.name to setOf(SignedTransaction::class.java.name))
         override val staticServeDirs: Map<String, String> = mapOf("simmvaluationdemo" to javaClass.classLoader.getResource("simmvaluationweb").toExternalForm())
-        override val servicePlugins = listOf(Function(SimmFlow::Service), Function(IRSTradeFlow::Service))
+        override val servicePlugins = listOf(Function(SimmFlow::Service), Function(IRSTradeFlow::Service), Function(CollectSignatureFlowImpl::Service))
         override fun customizeSerialization(custom: SerializationCustomization): Boolean {
             custom.apply {
                 // OpenGamma classes.
