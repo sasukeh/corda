@@ -8,6 +8,7 @@ import net.corda.flows.CollectSignaturesFlow
 import net.corda.irs.api.InterestRateSwapAPI
 import net.corda.irs.contract.InterestRateSwap
 import net.corda.irs.flows.AutoOfferFlow
+import net.corda.irs.flows.CollectSignatureFlowImpl
 import net.corda.irs.flows.FixingFlow
 import net.corda.irs.flows.UpdateBusinessDayFlow
 import java.time.Duration
