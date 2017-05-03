@@ -5,6 +5,7 @@ import net.corda.core.checkedAdd
 import net.corda.core.crypto.Party
 import net.corda.core.crypto.SecureHash
 import net.corda.core.flows.FlowLogic
+import net.corda.core.flows.SubFlowable
 import net.corda.core.getOrThrow
 import net.corda.core.serialization.CordaSerializable
 import net.corda.core.transactions.LedgerTransaction
@@ -29,6 +30,7 @@ import java.util.*
  *
  * The flow returns a list of verified [LedgerTransaction] objects, in a depth-first order.
  */
+@SubFlowable
 class ResolveTransactionsFlow(private val txHashes: Set<SecureHash>,
                               private val otherSide: Party) : FlowLogic<List<LedgerTransaction>>() {
 
@@ -65,7 +67,6 @@ class ResolveTransactionsFlow(private val txHashes: Set<SecureHash>,
             require(result.size == transactions.size)
             return result
         }
-
     }
 
     @CordaSerializable

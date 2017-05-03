@@ -3,9 +3,13 @@ package net.corda.flows
 import co.paralleluniverse.fibers.Suspendable
 import net.corda.contracts.asset.sumCashBy
 import net.corda.core.contracts.*
-import net.corda.core.crypto.*
+import net.corda.core.crypto.DigitalSignature
+import net.corda.core.crypto.Party
+import net.corda.core.crypto.expandedCompositeKeys
+import net.corda.core.crypto.signWithECDSA
 import net.corda.core.flows.FlowException
 import net.corda.core.flows.FlowLogic
+import net.corda.core.flows.SubFlowable
 import net.corda.core.node.NodeInfo
 import net.corda.core.seconds
 import net.corda.core.serialization.CordaSerializable
@@ -54,10 +58,7 @@ object TwoPartyTradeFlow {
             val sellerOwnerKey: PublicKey
     )
 
-    @CordaSerializable
-    data class SignaturesFromSeller(val sellerSig: DigitalSignature.WithKey,
-                                    val notarySig: DigitalSignature.WithKey)
-
+    @SubFlowable
     open class Seller(val otherParty: Party,
                       val notaryNode: NodeInfo,
                       val assetToSell: StateAndRef<OwnableState>,
@@ -139,6 +140,7 @@ object TwoPartyTradeFlow {
         }
     }
 
+    @SubFlowable
     open class Buyer(val otherParty: Party,
                      val notary: Party,
                      val acceptablePrice: Amount<Currency>,

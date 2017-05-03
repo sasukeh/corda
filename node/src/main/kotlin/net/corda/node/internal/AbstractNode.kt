@@ -296,7 +296,7 @@ abstract class AbstractNode(open val configuration: NodeConfiguration,
         // the identity key. But the infrastructure to make that easy isn't here yet.
         keyManagement = makeKeyManagementService()
         flowLogicFactory = initialiseFlowLogicFactory()
-        scheduler = NodeSchedulerService(services, flowLogicFactory, unfinishedSchedules = busyNodeLatch)
+        scheduler = NodeSchedulerService(services, database, flowLogicFactory, unfinishedSchedules = busyNodeLatch)
 
         val tokenizableServices = mutableListOf(storage, net, vault, keyManagement, identity, platformClock, scheduler)
         makeAdvertisedServices(tokenizableServices)

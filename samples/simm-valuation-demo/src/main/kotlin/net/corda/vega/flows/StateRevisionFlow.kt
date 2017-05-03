@@ -2,6 +2,7 @@ package net.corda.vega.flows
 
 import net.corda.core.contracts.StateAndRef
 import net.corda.core.crypto.Party
+import net.corda.core.flows.SubFlowable
 import net.corda.core.seconds
 import net.corda.core.transactions.SignedTransaction
 import net.corda.flows.AbstractStateReplacementFlow
@@ -14,6 +15,7 @@ import java.security.PublicKey
  * on the update between two parties
  */
 object StateRevisionFlow {
+    @SubFlowable
     class Requester<T>(curStateRef: StateAndRef<RevisionedState<T>>,
                        updatedData: T) : AbstractStateReplacementFlow.Instigator<RevisionedState<T>, RevisionedState<T>, T>(curStateRef, updatedData) {
         override fun assembleTx(): Pair<SignedTransaction, List<PublicKey>> {
@@ -27,6 +29,7 @@ object StateRevisionFlow {
         }
     }
 
+    @SubFlowable
     open class Receiver<in T>(otherParty: Party) : AbstractStateReplacementFlow.Acceptor<T>(otherParty) {
         override fun verifyProposal(proposal: AbstractStateReplacementFlow.Proposal<T>) {
             val proposedTx = proposal.stx.tx

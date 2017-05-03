@@ -6,6 +6,7 @@ import net.corda.core.contracts.FixOf
 import net.corda.core.crypto.DigitalSignature
 import net.corda.core.crypto.Party
 import net.corda.core.flows.FlowLogic
+import net.corda.core.flows.SubFlowable
 import net.corda.core.serialization.CordaSerializable
 import net.corda.core.transactions.FilteredTransaction
 import net.corda.core.transactions.TransactionBuilder
@@ -27,6 +28,7 @@ import java.util.*
  *
  * @throws FixOutOfRange if the returned fix was further away from the expected rate by the given amount.
  */
+@SubFlowable
 open class RatesFixFlow(protected val tx: TransactionBuilder,
                         protected val oracle: Party,
                         protected val fixOf: FixOf,
@@ -93,6 +95,7 @@ open class RatesFixFlow(protected val tx: TransactionBuilder,
     }
 
     // DOCSTART 1
+    @SubFlowable(inlined = false)
     class FixQueryFlow(val fixOf: FixOf, val oracle: Party) : FlowLogic<Fix>() {
         @Suspendable
         override fun call(): Fix {
@@ -109,6 +112,7 @@ open class RatesFixFlow(protected val tx: TransactionBuilder,
         }
     }
 
+    @SubFlowable(inlined = false)
     class FixSignFlow(val tx: TransactionBuilder, val oracle: Party,
                       val partialMerkleTx: FilteredTransaction) : FlowLogic<DigitalSignature.LegallyIdentifiable>() {
         @Suspendable

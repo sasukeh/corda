@@ -4,6 +4,7 @@ import co.paralleluniverse.fibers.Suspendable
 import net.corda.core.contracts.DealState
 import net.corda.core.crypto.*
 import net.corda.core.flows.FlowLogic
+import net.corda.core.flows.SubFlowable
 import net.corda.core.node.NodeInfo
 import net.corda.core.seconds
 import net.corda.core.serialization.CordaSerializable
@@ -41,6 +42,7 @@ object TwoPartyDealFlow {
      * There's a good chance we can push at least some of this logic down into core flow logic
      * and helper methods etc.
      */
+    @SubFlowable
     abstract class Primary(override val progressTracker: ProgressTracker = Primary.tracker()) : FlowLogic<SignedTransaction>() {
 
         companion object {
@@ -61,10 +63,36 @@ object TwoPartyDealFlow {
         abstract val myKeyPair: KeyPair
 
         @Suspendable
-        fun getPartialTransaction(): UntrustworthyData<SignedTransaction> {
+        override fun call(): SignedTransaction {
+            val stx: SignedTransaction = verifyPartialTransaction(getPartialTransaction())
+
+            // These two steps could be done in parallel, in theory. Our framework doesn't support that yet though.
+            val ourSignature = computeOurSignature(stx)
+            val allPartySignedTx = stx + ourSignature
+            val notarySignatures = getNotarySignatures(allPartySignedTx)
+
+            val fullySigned = sendSignatures(allPartySignedTx, ourSignature, notarySignatures)
+
+            progressTracker.currentStep = RECORDING
+
+            serviceHub.recordTransactions(fullySigned)
+
+            logger.trace { "Deal stored" }
+
+            progressTracker.currentStep = COPYING_TO_REGULATOR
+            val regulators = serviceHub.networkMapCache.regulatorNodes
+            if (regulators.isNotEmpty()) {
+                // If there are regulators in the network, then we could copy them in on the transaction via a sub-flow
+                // which would simply send them the transaction.
+            }
+
+            return fullySigned
+        }
+
+        @Suspendable
+        private fun getPartialTransaction(): UntrustworthyData<SignedTransaction> {
             progressTracker.currentStep = AWAITING_PROPOSAL
 
-            // Make the first message we'll send to kick off the flow.
             val hello = Handshake(payload, myKeyPair.public)
             val maybeSTX = sendAndReceive<SignedTransaction>(otherParty, hello)
 
@@ -72,7 +100,7 @@ object TwoPartyDealFlow {
         }
 
         @Suspendable
-        fun verifyPartialTransaction(untrustedPartialTX: UntrustworthyData<SignedTransaction>): SignedTransaction {
+        private fun verifyPartialTransaction(untrustedPartialTX: UntrustworthyData<SignedTransaction>): SignedTransaction {
             progressTracker.currentStep = VERIFYING
 
             untrustedPartialTX.unwrap { stx ->
@@ -110,33 +138,6 @@ object TwoPartyDealFlow {
         }
 
         @Suspendable
-        override fun call(): SignedTransaction {
-            val stx: SignedTransaction = verifyPartialTransaction(getPartialTransaction())
-
-            // These two steps could be done in parallel, in theory. Our framework doesn't support that yet though.
-            val ourSignature = computeOurSignature(stx)
-            val allPartySignedTx = stx + ourSignature
-            val notarySignatures = getNotarySignatures(allPartySignedTx)
-
-            val fullySigned = sendSignatures(allPartySignedTx, ourSignature, notarySignatures)
-
-            progressTracker.currentStep = RECORDING
-
-            serviceHub.recordTransactions(fullySigned)
-
-            logger.trace { "Deal stored" }
-
-            progressTracker.currentStep = COPYING_TO_REGULATOR
-            val regulators = serviceHub.networkMapCache.regulatorNodes
-            if (regulators.isNotEmpty()) {
-                // If there are regulators in the network, then we could copy them in on the transaction via a sub-flow
-                // which would simply send them the transaction.
-            }
-
-            return fullySigned
-        }
-
-        @Suspendable
         private fun getNotarySignatures(stx: SignedTransaction): List<DigitalSignature.WithKey> {
             progressTracker.currentStep = NOTARY
             return subFlow(NotaryFlow.Client(stx))
@@ -167,6 +168,7 @@ object TwoPartyDealFlow {
      * There's a good chance we can push at least some of this logic down into core flow logic
      * and helper methods etc.
      */
+    @SubFlowable
     abstract class Secondary<U>(override val progressTracker: ProgressTracker = Secondary.tracker()) : FlowLogic<SignedTransaction>() {
 
         companion object {
@@ -251,8 +253,9 @@ object TwoPartyDealFlow {
                           override val myKeyPair: KeyPair,
                           override val progressTracker: ProgressTracker = Primary.tracker()) : Primary() {
 
-        override val notaryNode: NodeInfo get() =
-        serviceHub.networkMapCache.notaryNodes.filter { it.notaryIdentity == payload.notary }.single()
+        override val notaryNode: NodeInfo get() {
+            return serviceHub.networkMapCache.notaryNodes.single { it.notaryIdentity == payload.notary }
+        }
     }
 
     /**
