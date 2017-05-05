@@ -44,10 +44,7 @@ object KeyStoreUtilities {
      */
     @Throws(KeyStoreException::class, IOException::class)
     fun loadKeyStore(keyStoreFilePath: Path, storePassword: String): KeyStore {
-        val pass = storePassword.toCharArray()
-        val keyStore = KeyStore.getInstance(KEYSTORE_TYPE)
-        keyStoreFilePath.read { keyStore.load(it, pass) }
-        return keyStore
+        return keyStoreFilePath.read { loadKeyStore(it, storePassword) }
     }
 
     /**
