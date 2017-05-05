@@ -19,10 +19,6 @@ import net.corda.core.schemas.requery.converters.VaultStateStatusConverter
 import net.corda.core.serialization.deserialize
 import net.corda.core.serialization.serialize
 import net.corda.core.transactions.LedgerTransaction
-import net.corda.core.utilities.DUMMY_NOTARY
-import net.corda.core.utilities.DUMMY_NOTARY_KEY
-import net.corda.core.utilities.DUMMY_PUBKEY_1
-import net.corda.core.utilities.DUMMY_PUBKEY_2
 import org.h2.jdbcx.JdbcDataSource
 import org.junit.After
 import org.junit.Assert
@@ -39,10 +35,7 @@ import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
 import net.corda.contracts.testing.DummyLinearContract
-import net.corda.testing.ALICE
-import net.corda.testing.BOB
-import net.corda.testing.CHARLIE
-import org.junit.Assert.assertThat
+import net.corda.core.utilities.*
 
 class VaultSchemaTest {
 
@@ -355,7 +348,7 @@ class VaultSchemaTest {
 
         // counterparty
         val cpty = VaultPartyEntity()
-        cpty.name = BOB.name
+        cpty.name = BOB.name.commonName
         cpty.key = BOB.owningKey.toBase58String()
 
         data.invoke {
