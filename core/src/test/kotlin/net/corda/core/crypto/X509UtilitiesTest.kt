@@ -197,9 +197,9 @@ class X509UtilitiesTest {
 
     @Test
     fun `create server cert and use in SSL socket`() {
-        val tmpCAKeyStore = tempFile("keystore.bks")
-        val tmpTrustStore = tempFile("truststore.bks")
-        val tmpServerKeyStore = tempFile("serverkeystore.bks")
+        val tmpCAKeyStore = tempFile("keystore.jks")
+        val tmpTrustStore = tempFile("truststore.jks")
+        val tmpServerKeyStore = tempFile("serverkeystore.jks")
 
         // Generate Root and Intermediate CA cert and put both into key store and root ca cert into trust store
         val caKeyStore = createCAKeyStoreAndTrustStore(tmpCAKeyStore,
