@@ -491,14 +491,22 @@ object Crypto {
      * Check if a point's coordinates are on the expected curve to avoid certain types of ECC attacks.
      * Point-at-infinity is not permitted as well.
      * @see <a href="https://safecurves.cr.yp.to/twist.html">Small subgroup and invalid-curve attacks</a> for a more descriptive explanation on such attacks.
-     * This method currently applies to ECDSA (both R1 and K1 curves) and EdDSA (ed25519 curve).
+     * This method currently applies to BouncyCastle's ECDSA (both R1 and K1 curves) and I2P's EdDSA (ed25519 curve).
      * @param publicKey a [PublicKey], usually used to validate a signer's public key in on the Curve.
      * @param signatureScheme a [SignatureScheme] object, retrieved from supported signature schemes, see [Crypto].
      * @return true if the point lies on the curve or false if it doesn't.
+     * @throws IllegalArgumentException if the requested signature scheme or the key type is not supported.
      */
-    fun publicKeyOnCurve(signatureScheme: SignatureScheme, publicKey: PublicKey): Boolean =
-            (publicKey is BCECPublicKey && publicKey.parameters == signatureScheme.algSpec && !publicKey.q.isInfinity && publicKey.q.isValid)
-                    || (publicKey is EdDSAPublicKey && publicKey.params == signatureScheme.algSpec && !isEdDSAPointAtInfinity(publicKey) && publicKey.a.isOnCurve())
+    @Throws(IllegalArgumentException::class)
+    fun publicKeyOnCurve(signatureScheme: SignatureScheme, publicKey: PublicKey): Boolean {
+        if (!isSupportedSignatureScheme(signatureScheme))
+            throw IllegalArgumentException("Unsupported signature scheme: $signatureScheme.schemeCodeName")
+        when (publicKey) {
+            is BCECPublicKey -> return (publicKey.parameters == signatureScheme.algSpec && !publicKey.q.isInfinity && publicKey.q.isValid)
+            is EdDSAPublicKey -> return (publicKey.params == signatureScheme.algSpec && !isEdDSAPointAtInfinity(publicKey) && publicKey.a.isOnCurve())
+            else -> throw IllegalArgumentException("Unsupported key type: ${publicKey::class}")
+        }
+    }
 
     // return true if EdDSA publicKey is point at infinity.
     // For EdDSA a custom function is required as it is not supported by the I2P implementation.

@@ -16,6 +16,7 @@ import org.bouncycastle.pqc.jcajce.provider.sphincs.BCSphincs256PrivateKey
 import org.bouncycastle.pqc.jcajce.provider.sphincs.BCSphincs256PublicKey
 import org.junit.Assert.assertNotEquals
 import org.junit.Test
+import java.security.KeyPairGenerator
 import java.util.*
 import kotlin.test.*
 
@@ -644,5 +645,15 @@ class CryptoUtilsTest {
         // check for point at infinity.
         val pubKeySpec = EdDSAPublicKeySpec((Crypto.EDDSA_ED25519_SHA512.algSpec as EdDSANamedCurveSpec).curve.getZero(GroupElement.Representation.P3), Crypto.EDDSA_ED25519_SHA512.algSpec as EdDSANamedCurveSpec)
         assertFalse(Crypto.publicKeyOnCurve(Crypto.EDDSA_ED25519_SHA512, EdDSAPublicKey(pubKeySpec)))
+    }
+
+    @Test(expected = IllegalArgumentException::class)
+    fun `Unsupported EC public key type on curve`() {
+        val keyGen = KeyPairGenerator.getInstance("EC") // sun.security.ec.ECPublicKeyImpl
+        keyGen.initialize(256, newSecureRandom())
+        val pairSun = keyGen.generateKeyPair()
+        val pubSun = pairSun.getPublic()
+        // should fail as pubSun is not a BCECPublicKey.
+        Crypto.publicKeyOnCurve(Crypto.ECDSA_SECP256R1_SHA256, pubSun)
     }
 }
