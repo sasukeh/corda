@@ -499,6 +499,7 @@ object Crypto {
      * @throws IllegalArgumentException if the requested signature scheme is not supported.
      */
     @Throws(IllegalArgumentException::class)
+    @JvmOverloads
     fun generateKeyPair(signatureScheme: SignatureScheme = DEFAULT_SIGNATURE_SCHEME): KeyPair {
         if (!supportedSignatureSchemes.containsKey(signatureScheme.schemeCodeName))
             throw IllegalArgumentException("Unsupported key/algorithm for schemeCodeName: $signatureScheme.schemeCodeName")
