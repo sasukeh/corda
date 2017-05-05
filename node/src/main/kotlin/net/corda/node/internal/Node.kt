@@ -15,12 +15,15 @@ import net.corda.core.node.services.ServiceType
 import net.corda.core.node.services.UniquenessProvider
 import net.corda.core.success
 import net.corda.core.utilities.loggerFor
+import net.corda.core.utilities.trace
 import net.corda.node.printBasicNodeInfo
 import net.corda.node.serialization.NodeClock
 import net.corda.node.services.RPCUserService
 import net.corda.node.services.RPCUserServiceImpl
 import net.corda.node.services.config.FullNodeConfiguration
 import net.corda.node.services.messaging.ArtemisMessagingServer
+import net.corda.node.services.messaging.ArtemisMessagingServer.Companion.ipDetectRequestProperty
+import net.corda.node.services.messaging.ArtemisMessagingServer.Companion.ipDetectResponseProperty
 import net.corda.node.services.messaging.MessagingService
 import net.corda.node.services.messaging.NodeMessagingClient
 import net.corda.node.services.transactions.PersistentUniquenessProvider
@@ -29,12 +32,19 @@ import net.corda.node.services.transactions.RaftUniquenessProvider
 import net.corda.node.services.transactions.RaftValidatingNotaryService
 import net.corda.node.utilities.AddressUtils
 import net.corda.node.utilities.AffinityExecutor
+import net.corda.nodeapi.ArtemisMessagingComponent.Companion.IP_REQUEST_PREFIX
+import net.corda.nodeapi.ArtemisMessagingComponent.Companion.PEER_USER
 import net.corda.nodeapi.ArtemisMessagingComponent.NetworkMapAddress
+import net.corda.nodeapi.ArtemisTcpTransport
+import net.corda.nodeapi.ConnectionDirection
+import org.apache.activemq.artemis.api.core.client.ActiveMQClient
+import org.apache.activemq.artemis.api.core.client.ClientMessage
 import org.slf4j.Logger
 import java.io.RandomAccessFile
 import java.lang.management.ManagementFactory
 import java.nio.channels.FileLock
 import java.time.Clock
+import java.util.*
 import javax.management.ObjectName
 import kotlin.concurrent.thread
 
@@ -127,7 +137,8 @@ class Node(override val configuration: FullNodeConfiguration,
     private fun makeLocalMessageBroker(): HostAndPort {
         with(configuration) {
             val useHost = tryDetectIfNotPublicHost(p2pAddress.host)
-            val useAddress = useHost?.let { HostAndPort.fromParts(it, p2pAddress.port) } ?: p2pAddress
+            val useHost2 = if (useHost == null) detectPublicHost(p2pAddress, configuration) else null
+            val useAddress = useHost2?.let { HostAndPort.fromParts(it, p2pAddress.port) } ?: p2pAddress
             messageBroker = ArtemisMessagingServer(this, useAddress, rpcAddress, services.networkMapCache, userService)
             return useAddress
         }
@@ -153,6 +164,33 @@ class Node(override val configuration: FullNodeConfiguration,
         }
         return null
     }
+
+    private fun detectPublicHost(serverAddress: HostAndPort, config: FullNodeConfiguration): String? {
+        log.trace { "Trying to detect public hostname through the Network Map Service at $serverAddress" }
+        val tcpTransport = ArtemisTcpTransport.tcpTransport(ConnectionDirection.Outbound(), serverAddress, config)
+        val locator = ActiveMQClient.createServerLocatorWithoutHA(tcpTransport)
+        val clientFactory = locator.createSessionFactory()
+
+        val session = clientFactory!!.createSession(PEER_USER, PEER_USER, false, true, true, locator.isPreAcknowledge, ActiveMQClient.DEFAULT_ACK_BATCH_SIZE)
+        val requestId = UUID.randomUUID().toString()
+        session.addMetaData(ipDetectRequestProperty, requestId)
+        session.start()
+
+        val queueName = "$IP_REQUEST_PREFIX$requestId"
+        session.createQueue(queueName, queueName, false)
+
+        val consumer = session.createConsumer(queueName)
+        val artemisMessage: ClientMessage = consumer.receive(5000)
+        val publicHostAndPort = HostAndPort.fromString(artemisMessage.getStringProperty(ipDetectResponseProperty))
+        log.trace { "Detected public address: $publicHostAndPort" }
+
+        consumer.close()
+        session.deleteQueue(queueName)
+        clientFactory.close()
+
+        return publicHostAndPort.host
+    }
+
 
     override fun startMessagingService(rpcOps: RPCOps) {
         // Start up the embedded MQ server
