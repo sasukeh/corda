@@ -6,10 +6,10 @@ Here are release notes for each snapshot release from M9 onwards.
 Unreleased
 ----------
 
-Flows can now be versioned using the ``FlowVersion`` annotation, which assigns an integer version number to it. For now
-this enables a node to restrict usage of a flow to a specific version. Support for multiple verisons of the same flow,
-hence achieving backwards compatibility, will be possible once we start loading CorDapps in separate class loaders. Watch
-this space...
+Flows which initiate communication with a counterparty can now be versioned using the ``InitiatingFlow`` annotation. This
+assigns an integer version number to the flow, defaulting to 1. For now this enables a node to restrict usage of a flow
+to a specific version. Support for multiple verisons of the same flow, hence achieving backwards compatibility, will be
+supported in a future release.
 
 Milestone 11
 ------------
@@ -36,7 +36,8 @@ We anticipate enforcing the use of distinguished names in node configurations fr
 
 We have increased the maximum message size that we can send to Corda over RPC from 100 KB to 10 MB.
 
-The Corda node now disables any use of ObjectInputStream to prevent Java deserialisation within flows. This is a security fix, and prevents the node from deserialising arbitrary objects.
+The Corda node now disables any use of ObjectInputStream to prevent Java deserialisation within flows. This is a security fix,
+and prevents the node from deserialising arbitrary objects.
 
 We've introduced the concept of platform version which is a single integer value which increments by 1 if a release changes
 any of the public APIs of the entire Corda platform. This includes the node's public APIs, the messaging protocol,
@@ -44,8 +45,9 @@ serialisation, etc. The node exposes the platform version it's on and we envisio
 run on older versions of the platform to the one they were compiled against. Platform version borrows heavily from Android's
 API Level.
 
-We have revamped the DemoBench user interface. DemoBench will now also be installed as "Corda DemoBench" for both Windows and MacOSX. The original version
-was installed as just "DemoBench", and so will not be overwritten automatically by the new version.
+We have revamped the DemoBench user interface. DemoBench will now also be installed as "Corda DemoBench" for both Windows
+and MacOSX. The original version was installed as just "DemoBench", and so will not be overwritten automatically by the
+new version.
 
 Milestone 10
 ------------

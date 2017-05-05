@@ -1,5 +1,6 @@
 package net.corda.node.messaging
 
+import co.paralleluniverse.fibers.Suspendable
 import net.corda.contracts.CommercialPaper
 import net.corda.contracts.asset.*
 import net.corda.contracts.testing.fillWithSomeTestCash
@@ -8,11 +9,14 @@ import net.corda.core.crypto.AnonymousParty
 import net.corda.core.crypto.Party
 import net.corda.core.crypto.SecureHash
 import net.corda.core.days
+import net.corda.core.flows.FlowLogic
 import net.corda.core.flows.FlowStateMachine
+import net.corda.core.flows.InitiatingFlow
 import net.corda.core.flows.StateMachineRunId
 import net.corda.core.getOrThrow
 import net.corda.core.map
 import net.corda.core.messaging.SingleMessageRecipient
+import net.corda.core.node.NodeInfo
 import net.corda.core.node.services.*
 import net.corda.core.rootCause
 import net.corda.core.transactions.SignedTransaction
@@ -31,7 +35,6 @@ import net.corda.testing.*
 import net.corda.testing.node.InMemoryMessagingNetwork
 import net.corda.testing.node.MockNetwork
 import org.assertj.core.api.Assertions.assertThat
-import org.bouncycastle.asn1.x500.X500Name
 import org.jetbrains.exposed.sql.Database
 import org.junit.After
 import org.junit.Before
@@ -391,7 +394,6 @@ class TwoPartyTradeFlowTests {
 
     @Test
     fun `track works`() {
-
         val notaryNode = net.createNotaryNode(null, DUMMY_NOTARY.name)
         val aliceNode = makeNodeWithTracking(notaryNode.info.address, ALICE.name)
         val bobNode = makeNodeWithTracking(notaryNode.info.address, BOB.name)
@@ -445,13 +447,13 @@ class TwoPartyTradeFlowTests {
             )
             aliceTxStream.expectEvents { aliceTxExpectations }
             val aliceMappingExpectations = sequence(
-                    expect { mapping: StateMachineTransactionMapping ->
-                        require(mapping.stateMachineRunId == aliceSmId)
-                        require(mapping.transactionId == bobsFakeCash[0].id)
+                    expect { (stateMachineRunId, transactionId) ->
+                        require(stateMachineRunId == aliceSmId)
+                        require(transactionId == bobsFakeCash[0].id)
                     },
-                    expect { mapping: StateMachineTransactionMapping ->
-                        require(mapping.stateMachineRunId == aliceSmId)
-                        require(mapping.transactionId == bobsFakeCash[2].id)
+                    expect { (stateMachineRunId, transactionId) ->
+                        require(stateMachineRunId == aliceSmId)
+                        require(transactionId == bobsFakeCash[2].id)
                     },
                     expect { mapping: StateMachineTransactionMapping ->
                         require(mapping.stateMachineRunId == aliceSmId)
@@ -487,10 +489,21 @@ class TwoPartyTradeFlowTests {
                                   sellerNode: MockNetwork.MockNode,
                                   buyerNode: MockNetwork.MockNode,
                                   assetToSell: StateAndRef<OwnableState>): RunResult {
-        val buyerFuture = buyerNode.initiateSingleShotFlow(Seller::class) { otherParty ->
+        @InitiatingFlow
+        class SellerRunnerFlow(val buyer: Party, val notary: NodeInfo) : FlowLogic<SignedTransaction>() {
+            @Suspendable
+            override fun call(): SignedTransaction = subFlow(Seller(
+                    buyer,
+                    notary,
+                    assetToSell,
+                    1000.DOLLARS,
+                    serviceHub.legalIdentityKey))
+        }
+
+        val buyerFuture = buyerNode.initiateSingleShotFlow(SellerRunnerFlow::class) { otherParty ->
             Buyer(otherParty, notaryNode.info.notaryIdentity, 1000.DOLLARS, CommercialPaper.State::class.java)
         }.map { it.stateMachine }
-        val seller = Seller(buyerNode.info.legalIdentity, notaryNode.info, assetToSell, 1000.DOLLARS, sellerNode.services.legalIdentityKey)
+        val seller = SellerRunnerFlow(buyerNode.info.legalIdentity, notaryNode.info)
         val sellerResultFuture = sellerNode.services.startFlow(seller).resultFuture
         return RunResult(buyerFuture, sellerResultFuture, seller.stateMachine.id)
     }
