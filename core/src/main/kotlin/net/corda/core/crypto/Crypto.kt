@@ -482,7 +482,7 @@ object Crypto {
     fun generateKeyPair(): KeyPair = generateKeyPair(DEFAULT_SIGNATURE_SCHEME)
 
     /** Check if the requested signature scheme's codeName is supported by the system. */
-    fun isSupportedSignatureScheme(schemeCodeName: String): Boolean = supportedSignatureSchemes.containsKey(schemeCodeName)
+    fun isSupportedSignatureScheme(schemeCodeName: String): Boolean = schemeCodeName in supportedSignatureSchemes
     /** Check if the requested [SignatureScheme] is supported by the system. */
     fun isSupportedSignatureScheme(signatureScheme: SignatureScheme): Boolean = supportedSignatureSchemes.getOrElse(signatureScheme.schemeCodeName, { false }) == signatureScheme
 }
