@@ -488,21 +488,20 @@ object Crypto {
     /**
      * Returns a key pair derived from the given [BigInteger] entropy. This is useful for unit tests
      * and other cases where you want hard-coded private keys.
-     * @param signatureScheme a supported [SignatureScheme]; currently, [EDDSA_ED25519_SHA512] is the sole scheme supported for this operation.
+     * Currently, [EDDSA_ED25519_SHA512] is the sole scheme supported for this operation.
+     * @param signatureScheme a supported [SignatureScheme], see [Crypto], default to [DEFAULT_SIGNATURE_SCHEME] if not provided.
      * @param entropy a [BigInteger] value.
      * @return a new [KeyPair] from an entropy input.
      * @throws IllegalArgumentException if the requested signature scheme is not supported for KeyPair generation using an entropy input.
      */
     @Throws(IllegalArgumentException::class)
-    fun generateKeyPairFromEntropy(signatureScheme: SignatureScheme, entropy: BigInteger): KeyPair {
+    @JvmOverloads
+    fun generateKeyPairFromEntropy(signatureScheme: SignatureScheme = DEFAULT_SIGNATURE_SCHEME, entropy: BigInteger): KeyPair {
         when (signatureScheme) {
             EDDSA_ED25519_SHA512 -> return generateEdDSAKeyPairFromEntropy(entropy)
         }
         throw IllegalArgumentException("Unsupported signature scheme for fixed entropy-based key pair generation: $signatureScheme.schemeCodeName")
     }
-
-    /** Returns a key pair for the default signature scheme (currently, [EDDSA_ED25519_SHA512]) derived from the given [BigInteger] entropy. */
-    fun generateKeyPairFromEntropy(entropy: BigInteger): KeyPair = generateKeyPairFromEntropy(DEFAULT_SIGNATURE_SCHEME, entropy)
 
     // custom key pair generator from entropy.
     private fun generateEdDSAKeyPairFromEntropy(entropy: BigInteger): KeyPair {
