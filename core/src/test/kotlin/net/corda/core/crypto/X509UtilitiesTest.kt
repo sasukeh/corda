@@ -54,7 +54,7 @@ class X509UtilitiesTest {
     fun `create valid server certificate chain`() {
         val caCertAndKey = X509Utilities.createSelfSignedCACert(X500Name("CN=Test CA Cert,OU=Corda QA Department,O=R3 CEV,L=New York,C=US"))
         val subjectDN = X500Name("CN=Server Cert,OU=Corda QA Department,O=R3 CEV,L=New York,C=US")
-        val keyPair = Crypto.generateKeyPair(X509Utilities.DEFAULT_TLS_SIGNATURE_ALGORITHMS)
+        val keyPair = Crypto.generateKeyPair(X509Utilities.DEFAULT_TLS_SIGNATURE_SCHEME)
         val serverCert = X509Utilities.createServerCert(subjectDN, keyPair.public, caCertAndKey, listOf("alias name"), listOf("10.0.0.54"))
         assertTrue { serverCert.subjectDN.name.contains("CN=Server Cert") } // using our subject common name
         assertEquals(caCertAndKey.certificate.issuerDN, serverCert.issuerDN) // Issued by our CA cert
@@ -146,8 +146,8 @@ class X509UtilitiesTest {
 
         // Now sign something with private key and verify against certificate public key
         val testData = "12345".toByteArray()
-        val caSignature = Crypto.doSign(X509Utilities.DEFAULT_TLS_SIGNATURE_ALGORITHMS, rootCaPrivateKey, testData)
-        assertTrue { Crypto.isValid(X509Utilities.DEFAULT_TLS_SIGNATURE_ALGORITHMS, rootCaCert.publicKey, caSignature, testData) }
+        val caSignature = Crypto.doSign(X509Utilities.DEFAULT_TLS_SIGNATURE_SCHEME, rootCaPrivateKey, testData)
+        assertTrue { Crypto.isValid(X509Utilities.DEFAULT_TLS_SIGNATURE_SCHEME, rootCaCert.publicKey, caSignature, testData) }
 
         // Load back generated intermediate CA Cert and private key
         val intermediateCaCert = keyStore.getCertificate(X509Utilities.CORDA_INTERMEDIATE_CA_PRIVATE_KEY) as X509Certificate
@@ -156,8 +156,8 @@ class X509UtilitiesTest {
         intermediateCaCert.verify(rootCaCert.publicKey)
 
         // Now sign something with private key and verify against certificate public key
-        val intermediateSignature = Crypto.doSign(X509Utilities.DEFAULT_TLS_SIGNATURE_ALGORITHMS, intermediateCaCertPrivateKey, testData)
-        assertTrue { Crypto.isValid(X509Utilities.DEFAULT_TLS_SIGNATURE_ALGORITHMS, intermediateCaCert.publicKey, intermediateSignature, testData) }
+        val intermediateSignature = Crypto.doSign(X509Utilities.DEFAULT_TLS_SIGNATURE_SCHEME, intermediateCaCertPrivateKey, testData)
+        assertTrue { Crypto.isValid(X509Utilities.DEFAULT_TLS_SIGNATURE_SCHEME, intermediateCaCert.publicKey, intermediateSignature, testData) }
     }
 
     @Test
@@ -191,8 +191,8 @@ class X509UtilitiesTest {
 
         // Now sign something with private key and verify against certificate public key
         val testData = "123456".toByteArray()
-        val signature = Crypto.doSign(X509Utilities.DEFAULT_TLS_SIGNATURE_ALGORITHMS, serverCertAndKey.keyPair.private, testData)
-        assertTrue { Crypto.isValid(X509Utilities.DEFAULT_TLS_SIGNATURE_ALGORITHMS, serverCertAndKey.certificate.publicKey, signature, testData) }
+        val signature = Crypto.doSign(X509Utilities.DEFAULT_TLS_SIGNATURE_SCHEME, serverCertAndKey.keyPair.private, testData)
+        assertTrue { Crypto.isValid(X509Utilities.DEFAULT_TLS_SIGNATURE_SCHEME, serverCertAndKey.certificate.publicKey, signature, testData) }
     }
 
     @Test

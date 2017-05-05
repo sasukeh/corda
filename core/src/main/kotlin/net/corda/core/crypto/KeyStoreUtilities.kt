@@ -97,7 +97,6 @@ fun KeyStore.addOrReplaceCertificate(alias: String, cert: Certificate) {
 
 /**
  * Helper method save KeyStore to storage
- * @param keyStore the KeyStore to persist
  * @param keyStoreFilePath the file location to save to
  * @param storePassword password to access the store in future. This does not have to be the same password as any keys stored,
  * but for SSL purposes this is recommended.
@@ -134,8 +133,6 @@ fun KeyStore.getCertificateAndKey(alias: String, keyPassword: String): Certifica
 
 /**
  * Extract public X509 certificate from a KeyStore file assuming storage alias is know
- * @param keyStoreFilePath Path to load KeyStore from
- * @param storePassword Password to unlock the KeyStore
  * @param alias The name to lookup the Key and Certificate chain from
  * @return The X509Certificate found in the KeyStore under the specified alias
  */

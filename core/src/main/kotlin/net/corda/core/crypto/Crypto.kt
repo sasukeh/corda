@@ -150,7 +150,7 @@ object Crypto {
 
     init {
         // This registration is needed for reading back EdDSA key from java keystore.
-        // TODO: Find a way to make JSK work with bouncy castle provider or implement our own provide so we don't have to register bouncy castle provider.
+        // TODO: Find a way to make JKS work with bouncy castle provider or implement our own provide so we don't have to register bouncy castle provider.
         Security.addProvider(getBouncyCastleProvider())
     }
 

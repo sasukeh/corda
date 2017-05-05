@@ -26,7 +26,7 @@ import java.time.temporal.ChronoUnit
 import java.util.*
 
 object X509Utilities {
-    val DEFAULT_TLS_SIGNATURE_ALGORITHMS = Crypto.ECDSA_SECP256R1_SHA256
+    val DEFAULT_TLS_SIGNATURE_SCHEME = Crypto.ECDSA_SECP256R1_SHA256
 
     // Aliases for private keys and certificates.
     val CORDA_ROOT_CA_PRIVATE_KEY = "cordarootcaprivatekey"
@@ -76,10 +76,11 @@ object X509Utilities {
     /**
      * Create a de novo root self-signed X509 v3 CA cert and [KeyPair].
      * @param subject the cert Subject will be populated with the domain string
+     * @param signatureScheme The signature scheme which will be used to generate keys and certificate. Default to [DEFAULT_TLS_SIGNATURE_SCHEME] if not provided.
      * @return A data class is returned containing the new root CA Cert and its [KeyPair] for signing downstream certificates.
      * Note the generated certificate tree is capped at max depth of 2 to be in line with commercially available certificates
      */
-    fun createSelfSignedCACert(subject: X500Name, signatureScheme: SignatureScheme = DEFAULT_TLS_SIGNATURE_ALGORITHMS): CertificateAndKey {
+    fun createSelfSignedCACert(subject: X500Name, signatureScheme: SignatureScheme = DEFAULT_TLS_SIGNATURE_SCHEME): CertificateAndKey {
         val keyPair = generateKeyPair(signatureScheme)
         val window = getCertificateValidityWindow(0, 365 * 10)
         val cert = Crypto.createCertificate(subject, keyPair, subject, keyPair.public, CA_KEY_USAGE, CA_KEY_PURPOSES, signatureScheme, window, pathLength = 2)
@@ -89,11 +90,12 @@ object X509Utilities {
     /**
      * Create a de novo root intermediate X509 v3 CA cert and KeyPair.
      * @param subject subject of the generated certificate.
-     * @param certificateAuthority The Public certificate and KeyPair of the root CA certificate above this used to sign it
+     * @param ca The Public certificate and KeyPair of the root CA certificate above this used to sign it
+     * @param signatureScheme The signature scheme which will be used to generate keys and certificate. Default to [DEFAULT_TLS_SIGNATURE_SCHEME] if not provided.
      * @return A data class is returned containing the new intermediate CA Cert and its KeyPair for signing downstream certificates.
      * Note the generated certificate tree is capped at max depth of 1 below this to be in line with commercially available certificates
      */
-    fun createIntermediateCert(subject: X500Name, ca: CertificateAndKey, signatureScheme: SignatureScheme = DEFAULT_TLS_SIGNATURE_ALGORITHMS): CertificateAndKey {
+    fun createIntermediateCert(subject: X500Name, ca: CertificateAndKey, signatureScheme: SignatureScheme = DEFAULT_TLS_SIGNATURE_SCHEME): CertificateAndKey {
         val keyPair = generateKeyPair(signatureScheme)
         val issuer = X509CertificateHolder(ca.certificate.encoded).subject
         val window = getCertificateValidityWindow(0, 365 * 10, ca.certificate.notBefore, ca.certificate.notAfter)
@@ -105,9 +107,10 @@ object X509Utilities {
      * Create an X509v3 certificate suitable for use in TLS roles.
      * @param subject The contents to put in the subject field of the certificate
      * @param publicKey The PublicKey to be wrapped in the certificate
-     * @param certificateAuthority The Public certificate and KeyPair of the parent CA that will sign this certificate
+     * @param ca The Public certificate and KeyPair of the parent CA that will sign this certificate
      * @param subjectAlternativeNameDomains A set of alternate DNS names to be supported by the certificate during validation of the TLS handshakes
      * @param subjectAlternativeNameIps A set of alternate IP addresses to be supported by the certificate during validation of the TLS handshakes
+     * @param signatureScheme The signature scheme which will be used to generate keys and certificate. Default to [DEFAULT_TLS_SIGNATURE_SCHEME] if not provided.
      * @return The generated X509Certificate suitable for use as a Server/Client certificate in TLS.
      * This certificate is not marked as a CA cert to be similar in nature to commercial certificates.
      */
@@ -115,7 +118,7 @@ object X509Utilities {
                          ca: CertificateAndKey,
                          subjectAlternativeNameDomains: List<String>,
                          subjectAlternativeNameIps: List<String>,
-                         signatureScheme: SignatureScheme = DEFAULT_TLS_SIGNATURE_ALGORITHMS): X509Certificate {
+                         signatureScheme: SignatureScheme = DEFAULT_TLS_SIGNATURE_SCHEME): X509Certificate {
 
         val issuer = X509CertificateHolder(ca.certificate.encoded).subject
         val window = getCertificateValidityWindow(0, 365 * 10, ca.certificate.notBefore, ca.certificate.notAfter)
@@ -168,7 +171,7 @@ object X509Utilities {
                              caKeyStore: KeyStore,
                              caKeyPassword: String,
                              commonName: X500Name,
-                             signatureScheme: SignatureScheme = DEFAULT_TLS_SIGNATURE_ALGORITHMS): KeyStore {
+                             signatureScheme: SignatureScheme = DEFAULT_TLS_SIGNATURE_SCHEME): KeyStore {
 
         val rootCA = caKeyStore.getCertificateAndKey(CORDA_ROOT_CA_PRIVATE_KEY, caKeyPassword)
         val intermediateCA = caKeyStore.getCertificateAndKey(CORDA_INTERMEDIATE_CA_PRIVATE_KEY, caKeyPassword)
@@ -190,7 +193,7 @@ object X509Utilities {
         return keyStore
     }
 
-    fun createCertificateSigningRequest(subject: X500Name, keyPair: KeyPair, signatureScheme: SignatureScheme = DEFAULT_TLS_SIGNATURE_ALGORITHMS) = Crypto.createCertificateSigningRequest(subject, keyPair, signatureScheme)
+    fun createCertificateSigningRequest(subject: X500Name, keyPair: KeyPair, signatureScheme: SignatureScheme = DEFAULT_TLS_SIGNATURE_SCHEME) = Crypto.createCertificateSigningRequest(subject, keyPair, signatureScheme)
 }
 
 val X500Name.commonName: String get() = getRDNs(BCStyle.CN).first().first.value.toString()
