@@ -377,6 +377,14 @@ class DriverDSL(
 
     private val state = ThreadBox(State())
 
+    private val quasarHookJarPath: String by lazy {
+        val cl = ClassLoader.getSystemClassLoader()
+        val urls = (cl as URLClassLoader).urLs
+        val quasarPattern = ".*quasar-hook.*\\.jar$".toRegex()
+        val quasarFileUrl = urls.first { quasarPattern.matches(it.path) }
+        Paths.get(quasarFileUrl.toURI()).toString()
+    }
+
     //TODO: remove this once we can bundle quasar properly.
     private val quasarJarPath: String by lazy {
         val cl = ClassLoader.getSystemClassLoader()
@@ -430,6 +438,11 @@ class DriverDSL(
         val p2pAddress = portAllocation.nextHostAndPort()
         val rpcAddress = portAllocation.nextHostAndPort()
         val webAddress = portAllocation.nextHostAndPort()
+        shutdownManager.registerShutdown {
+            listOf(p2pAddress, rpcAddress, webAddress).forEach {
+                addressMustNotBeBound(executorService, it)
+            }
+        }
         val debugPort = if (isDebug) debugPortAllocation.nextPort() else null
         // TODO: Derive name from the full picked name, don't just wrap the common name
         val name = providedName ?:  X509Utilities.getDevX509Name("${pickA(name).commonName}-${p2pAddress.port}")
@@ -461,7 +474,7 @@ class DriverDSL(
                 configOverrides = configOverrides)
         val configuration = config.parseAs<FullNodeConfiguration>()
 
-        val processFuture = startNode(executorService, configuration, config, quasarJarPath, debugPort, systemProperties)
+        val processFuture = startNode(executorService, configuration, config, quasarHookJarPath, quasarJarPath, debugPort, systemProperties)
         registerProcess(processFuture)
         return processFuture.flatMap { process ->
             // We continue to use SSL enabled port for RPC when its for node user.
@@ -562,7 +575,7 @@ class DriverDSL(
         )
 
         log.info("Starting network-map-service")
-        val startNode = startNode(executorService, config.parseAs<FullNodeConfiguration>(), config, quasarJarPath, debugPort, systemProperties)
+        val startNode = startNode(executorService, config.parseAs<FullNodeConfiguration>(), config, quasarHookJarPath, quasarJarPath, debugPort, systemProperties)
         registerProcess(startNode)
     }
 
@@ -579,6 +592,7 @@ class DriverDSL(
                 executorService: ListeningScheduledExecutorService,
                 nodeConf: FullNodeConfiguration,
                 config: Config,
+                quasarHookJarPath: String,
                 quasarJarPath: String,
                 debugPort: Int?,
                 overriddenSystemProperties: Map<String, String>
@@ -592,6 +606,7 @@ class DriverDSL(
                         "visualvm.display.name" to "corda-${nodeConf.myLegalName}"
                 )
                 val extraJvmArguments = systemProperties.map { "-D${it.key}=${it.value}" } +
+                        "-javaagent:$quasarHookJarPath" +
                         "-javaagent:$quasarJarPath"
                 val loggingLevel = if (debugPort == null) "INFO" else "DEBUG"
 

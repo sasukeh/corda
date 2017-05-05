@@ -38,6 +38,17 @@ sourceSets {
             srcDir file('src/integration-test/resources')
         }
     }
+
+    test {
+        kotlin {
+            runtimeClasspath += project(':quasar-hook').tasks["jar"].outputs.files
+        }
+    }
+    integrationTest {
+        kotlin {
+            runtimeClasspath += project(':quasar-hook').tasks["jar"].outputs.files
+        }
+    }
 }
 
 // Use manual resource copying of log4j2.xml rather than source sets.
@@ -158,3 +169,5 @@ task integrationTest(type: Test) {
     testClassesDir = sourceSets.integrationTest.output.classesDir
     classpath = sourceSets.integrationTest.runtimeClasspath
 }
+
+compileKotlin.dependsOn(':quasar-hook:jar')
