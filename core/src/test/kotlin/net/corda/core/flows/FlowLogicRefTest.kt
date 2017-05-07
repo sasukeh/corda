@@ -1,6 +1,5 @@
 package net.corda.core.flows
 
-import net.corda.core.days
 import org.junit.Before
 import org.junit.Test
 import java.time.Duration
@@ -39,8 +38,7 @@ class FlowLogicRefTest {
     @Before
     fun setup() {
         // We have to allow Java boxed primitives but Kotlin warns we shouldn't be using them
-        factory = FlowLogicRefFactory(mapOf(Pair(KotlinFlowLogic::class.java.name, setOf(ParamType1::class.java.name, ParamType2::class.java.name)),
-                Pair(KotlinNoArgFlowLogic::class.java.name, setOf())))
+        factory = FlowLogicRefFactory(setOf(KotlinFlowLogic::class.java.name, KotlinNoArgFlowLogic::class.java.name))
     }
 
     @Test
@@ -72,12 +70,6 @@ class FlowLogicRefTest {
     @Test
     fun testCreateKotlinNonPrimary() {
         val args = mapOf(Pair("C", ParamType2("Hello Jack")))
-        factory.createKotlin(KotlinFlowLogic::class.java, args)
-    }
-
-    @Test(expected = IllegalArgumentException::class)
-    fun testCreateArgNotWhiteListed() {
-        val args = mapOf(Pair("illegal", 1.days))
         factory.createKotlin(KotlinFlowLogic::class.java, args)
     }
 

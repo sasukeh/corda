@@ -43,9 +43,7 @@ class NodeSchedulerServiceTest : SingletonSerializeAsToken() {
 
     val schedulerGatedExecutor = AffinityExecutor.Gate(true)
 
-    // We have to allow Java boxed primitives but Kotlin warns we shouldn't be using them
-    @Suppress("PLATFORM_CLASS_MAPPED_TO_KOTLIN")
-    val factory = FlowLogicRefFactory(mapOf(Pair(TestFlowLogic::class.java.name, setOf(NodeSchedulerServiceTest::class.java.name, Integer::class.java.name))))
+    val factory = FlowLogicRefFactory(setOf(TestFlowLogic::class.java.name))
 
     lateinit var services: MockServiceHubInternal
 

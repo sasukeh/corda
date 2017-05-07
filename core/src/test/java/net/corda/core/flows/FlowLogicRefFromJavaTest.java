@@ -1,8 +1,8 @@
 package net.corda.core.flows;
 
-import org.junit.*;
+import org.junit.Test;
 
-import java.util.*;
+import static java.util.Collections.singleton;
 
 public class FlowLogicRefFromJavaTest {
 
@@ -50,20 +50,13 @@ public class FlowLogicRefFromJavaTest {
 
     @Test
     public void test() {
-        Map<String, Set<String>> whiteList = new HashMap<>();
-        Set<String> argsList = new HashSet<>();
-        argsList.add(ParamType1.class.getName());
-        argsList.add(ParamType2.class.getName());
-        whiteList.put(JavaFlowLogic.class.getName(), argsList);
-        FlowLogicRefFactory factory = new FlowLogicRefFactory(whiteList);
+        FlowLogicRefFactory factory = new FlowLogicRefFactory(singleton(JavaFlowLogic.class.getName()));
         factory.create(JavaFlowLogic.class, new ParamType1(1), new ParamType2("Hello Jack"));
     }
 
     @Test
     public void testNoArg() {
-        Map<String, Set<String>> whiteList = new HashMap<>();
-        whiteList.put(JavaNoArgFlowLogic.class.getName(), new HashSet<>());
-        FlowLogicRefFactory factory = new FlowLogicRefFactory(whiteList);
+        FlowLogicRefFactory factory = new FlowLogicRefFactory(singleton(JavaNoArgFlowLogic.class.getName()));
         factory.create(JavaNoArgFlowLogic.class);
     }
 }

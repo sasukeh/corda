@@ -6,8 +6,6 @@ import com.google.common.util.concurrent.ListenableFuture
 import com.google.common.util.concurrent.MoreExecutors
 import com.google.common.util.concurrent.SettableFuture
 import net.corda.core.*
-import net.corda.core.contracts.Amount
-import net.corda.core.contracts.PartyAndReference
 import net.corda.core.crypto.Party
 import net.corda.core.crypto.X509Utilities
 import net.corda.core.flows.FlowInitiator
@@ -20,7 +18,6 @@ import net.corda.core.messaging.SingleMessageRecipient
 import net.corda.core.node.*
 import net.corda.core.node.services.*
 import net.corda.core.node.services.NetworkMapCache.MapChange
-import net.corda.core.serialization.OpaqueBytes
 import net.corda.core.serialization.SingletonSerializeAsToken
 import net.corda.core.serialization.deserialize
 import net.corda.core.serialization.serialize
@@ -72,6 +69,7 @@ import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.TimeUnit.SECONDS
 import kotlin.collections.ArrayList
+import kotlin.collections.HashSet
 import kotlin.reflect.KClass
 import net.corda.core.crypto.generateKeyPair as cryptoGenerateKeyPair
 
@@ -93,12 +91,12 @@ abstract class AbstractNode(open val configuration: NodeConfiguration,
         val PRIVATE_KEY_FILE_NAME = "identity-private-key"
         val PUBLIC_IDENTITY_FILE_NAME = "identity-public"
 
-        val defaultFlowWhiteList: Map<Class<out FlowLogic<*>>, Set<Class<*>>> = mapOf(
-                CashExitFlow::class.java to setOf(Amount::class.java, PartyAndReference::class.java),
-                CashIssueFlow::class.java to setOf(Amount::class.java, OpaqueBytes::class.java, Party::class.java),
-                CashPaymentFlow::class.java to setOf(Amount::class.java, Party::class.java),
-                FinalityFlow::class.java to emptySet(),
-                ContractUpgradeFlow::class.java to emptySet()
+        val defaultFlowWhiteList: Set<KClass<out FlowLogic<*>>> = setOf(
+                CashExitFlow::class,
+                CashIssueFlow::class,
+                CashPaymentFlow::class,
+                FinalityFlow::class,
+                ContractUpgradeFlow::class
         )
     }
 
@@ -383,22 +381,8 @@ abstract class AbstractNode(open val configuration: NodeConfiguration,
     }
 
     private fun initialiseFlowLogicFactory(): FlowLogicRefFactory {
-        val flowWhitelist = HashMap<String, Set<String>>()
-
-        for ((flowClass, extraArgumentTypes) in defaultFlowWhiteList) {
-            val argumentWhitelistClassNames = HashSet(extraArgumentTypes.map { it.name })
-            flowClass.constructors.forEach {
-                it.parameters.mapTo(argumentWhitelistClassNames) { it.type.name }
-            }
-            flowWhitelist.merge(flowClass.name, argumentWhitelistClassNames, { x, y -> x + y })
-        }
-
-        for (plugin in pluginRegistries) {
-            for ((className, classWhitelist) in plugin.requiredFlows) {
-                flowWhitelist.merge(className, classWhitelist, { x, y -> x + y })
-            }
-        }
-
+        val flowWhitelist = defaultFlowWhiteList.mapTo(HashSet()) { it.java.name }
+        pluginRegistries.flatMap { it.requiredFlows }.mapTo(flowWhitelist) { it.name }
         return FlowLogicRefFactory(flowWhitelist)
     }
 

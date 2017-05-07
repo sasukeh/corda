@@ -23,6 +23,7 @@ import net.corda.core.transactions.SignedTransaction
 import net.corda.node.services.api.ServiceHubInternal
 import net.corda.node.services.messaging.requirePermission
 import net.corda.node.services.startFlowPermission
+import net.corda.node.services.statemachine.FlowStateMachineImpl
 import net.corda.node.services.statemachine.StateMachineManager
 import net.corda.node.utilities.transaction
 import net.corda.nodeapi.CURRENT_RPC_USER
@@ -119,11 +120,8 @@ class CordaRPCOpsImpl(
         }
     }
 
-    // TODO: Check that this flow is annotated as being intended for RPC invocation
     override fun <T : Any> startTrackedFlowDynamic(logicType: Class<out FlowLogic<T>>, vararg args: Any?): FlowProgressHandle<T> {
-        requirePermission(startFlowPermission(logicType))
-        val currentUser = FlowInitiator.RPC(CURRENT_RPC_USER.get().username)
-        val stateMachine = services.invokeFlowAsync(logicType, currentUser, *args)
+        val stateMachine = startFlow(logicType, args)
         return FlowProgressHandleImpl(
                 id = stateMachine.id,
                 returnValue = stateMachine.resultFuture,
@@ -131,12 +129,18 @@ class CordaRPCOpsImpl(
         )
     }
 
-    // TODO: Check that this flow is annotated as being intended for RPC invocation
     override fun <T : Any> startFlowDynamic(logicType: Class<out FlowLogic<T>>, vararg args: Any?): FlowHandle<T> {
+        val stateMachine = startFlow(logicType, args)
+        return FlowHandleImpl(id = stateMachine.id, returnValue = stateMachine.resultFuture)
+    }
+
+    private fun <T : Any> startFlow(logicType: Class<out FlowLogic<T>>, args: Array<out Any?>): FlowStateMachineImpl<T> {
+//        require(logicType.isAnnotationPresent(StartableByRPC::class.java)) {
+//            "${logicType.name} has not been permissioned to be used for RPC"
+//        }
         requirePermission(startFlowPermission(logicType))
         val currentUser = FlowInitiator.RPC(CURRENT_RPC_USER.get().username)
-        val stateMachine = services.invokeFlowAsync(logicType, currentUser, *args)
-        return FlowHandleImpl(id = stateMachine.id, returnValue = stateMachine.resultFuture)
+        return services.invokeFlowAsync(logicType, currentUser, *args)
     }
 
     override fun attachmentExists(id: SecureHash): Boolean {
@@ -177,7 +181,7 @@ class CordaRPCOpsImpl(
     override fun partyFromName(name: String) = services.identityService.partyFromName(name)
     override fun partyFromX500Name(x500Name: X500Name)= services.identityService.partyFromX500Name(x500Name)
 
-    override fun registeredFlows(): List<String> = services.flowLogicRefFactory.flowWhitelist.keys.sorted()
+    override fun registeredFlows(): List<String> = services.flowLogicRefFactory.flowWhitelist.sorted()
 
     companion object {
         private fun stateMachineInfoFromFlowLogic(flowLogic: FlowLogic<*>): StateMachineInfo {

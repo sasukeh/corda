@@ -37,7 +37,5 @@ class ObjectInputStreamFlow : FlowLogic<Unit>() {
 }
 
 class BootTestsPlugin : CordaPluginRegistry() {
-
-    override val requiredFlows: Map<String, Set<String>> = mapOf(ObjectInputStreamFlow::class.java.name to setOf())
-
+    override val requiredFlows: Set<Class<out FlowLogic<*>>> = setOf(ObjectInputStreamFlow::class.java)
 }

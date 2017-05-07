@@ -209,7 +209,7 @@ object InteractiveShell {
      */
     @JvmStatic
     fun runFlowByNameFragment(nameFragment: String, inputData: String, output: RenderPrintWriter) {
-        val matches = node.flowLogicFactory.flowWhitelist.keys.filter { nameFragment in it }
+        val matches = node.flowLogicFactory.flowWhitelist.filter { nameFragment in it }
         if (matches.isEmpty()) {
             output.println("No matching flow found, run 'flow list' to see your options.", Color.red)
             return
@@ -274,10 +274,7 @@ object InteractiveShell {
             var paramNamesFromConstructor: List<String>? = null
             fun getPrototype(ctor: Constructor<*>): List<String> {
                 val argTypes = ctor.parameterTypes.map { it.simpleName }
-                val prototype = paramNamesFromConstructor!!.zip(argTypes).map { pair ->
-                    val (name, type) = pair
-                    "$name: $type"
-                }
+                val prototype = paramNamesFromConstructor!!.zip(argTypes).map { (name, type) -> "$name: $type" }
                 return prototype
             }
             try {

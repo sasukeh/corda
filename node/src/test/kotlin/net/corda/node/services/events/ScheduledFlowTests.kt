@@ -15,7 +15,6 @@ import net.corda.flows.FinalityFlow
 import net.corda.node.services.network.NetworkMapService
 import net.corda.node.services.statemachine.StateMachineManager
 import net.corda.node.services.transactions.ValidatingNotaryService
-import net.corda.node.utilities.AddOrRemove
 import net.corda.node.utilities.transaction
 import net.corda.testing.node.MockNetwork
 import org.junit.After
@@ -88,9 +87,9 @@ class ScheduledFlowTests {
     }
 
     object ScheduledFlowTestPlugin : CordaPluginRegistry() {
-        override val requiredFlows: Map<String, Set<String>> = mapOf(
-                InsertInitialStateFlow::class.java.name to setOf(Party::class.java.name),
-                ScheduledFlow::class.java.name to setOf(StateRef::class.java.name)
+        override val requiredFlows: Set<Class<out FlowLogic<*>>> = setOf(
+                InsertInitialStateFlow::class.java,
+                ScheduledFlow::class.java
         )
     }
 

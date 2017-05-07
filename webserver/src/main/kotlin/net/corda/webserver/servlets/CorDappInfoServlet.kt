@@ -34,7 +34,7 @@ class CorDappInfoServlet(val plugins: List<CordaPluginRegistry>, val rpc: CordaR
                             div {
                                 p { +"Whitelisted flows:" }
                                 ul {
-                                    plugin.requiredFlows.map { it.key }.forEach { li { +it } }
+                                    plugin.requiredFlows.forEach { li { +it.name } }
                                 }
                             }
                         }
@@ -56,7 +56,7 @@ class CorDappInfoServlet(val plugins: List<CordaPluginRegistry>, val rpc: CordaR
                             div {
                                 p { +"Static web content:" }
                                 ul {
-                                    plugin.staticServeDirs.map { it.key }.forEach {
+                                    plugin.staticServeDirs.keys.forEach {
                                         li { a("web/$it") { +it } }
                                     }
                                 }
