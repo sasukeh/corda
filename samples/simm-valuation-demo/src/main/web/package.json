@@ -24,7 +24,7 @@
     "bootstrap": "^3.3.7",
     "es6-shim": "0.35.1",
     "font-awesome": "^4.6.3",
-    "highcharts": "^4.2.6",
+    "highcharts": "^8.1.2",
     "jquery": "^3.1.0",
     "moment": "^2.14.1",
     "ng2-bootstrap": "1.0.x",
